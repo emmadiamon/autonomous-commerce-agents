@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#152634"/>
+  <title>Sign in · CommerceOS</title>
+  <link rel="stylesheet" href="/dashboard.css"/>
+  <script src="/login.js" defer></script>
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="login-brand"><span class="brand-mark">C<span class="brand-dot"></span></span> commerce<span>os</span></div>
+    <div class="login-badge"><span class="online-dot"></span> PRIVATE WORKSPACE</div>
+    <h1>Welcome back.</h1>
+    <p>Sign in to your operations workspace to review agent recommendations and activity.</p>
+    <form id="loginForm">
+      <label for="password">Workspace password</label>
+      <input id="password" type="password" autocomplete="current-password" minlength="12" required autofocus placeholder="Enter your admin password"/>
+      <button type="submit" id="loginButton" class="primary-button">Sign in →</button>
+      <div id="loginError" class="login-error" role="alert" hidden></div>
+    </form>
+    <div class="login-foot">CommerceOS · Private portfolio prototype</div>
+  </main>
+</body>
+</html>
