@@ -11,8 +11,7 @@ const repository: CommerceRepository = {
 
 const app = createApp(repository);
 
-// Exercise the same HTTP GraphQL handler used by the server rather than mixing
-// two GraphQL runtime instances by calling graphql() directly in Vitest.
+// Test the same GraphQL HTTP handler used by the server.
 async function query(source: string): Promise<{ data?: Record<string, unknown>; errors?: Array<{ message: string }> }> {
   const response = await app.fetch(new Request('http://localhost/graphql', {
     method: 'POST',
@@ -40,9 +39,11 @@ describe('Commerce GraphQL API', () => {
     expect(result.data?.order).toBeNull();
   });
 
-  it('rejects invalid order ID', async () => {
+  it('rejects invalid order ID while masking internal details', async () => {
     const result = await query('{ order(id: "not-a-number") { id } }');
-    expect(result.errors?.[0]?.message).toContain('positive integer');
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors?.[0]?.message).toBe('Unexpected error.');
+    expect(result.data?.order).toBeNull();
   });
 
   it('lists inventory', async () => {
