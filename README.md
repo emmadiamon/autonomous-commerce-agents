@@ -1,6 +1,6 @@
 # Autonomous Commerce Agents
 
-A TypeScript/Node.js/GraphQL/PostgreSQL portfolio prototype demonstrating read-only AI tool calling and **three specialized agents** over fictional e-commerce data. Phase 4 adds reproducible, offline scripted evaluations.
+A TypeScript/Node.js/GraphQL/PostgreSQL portfolio prototype demonstrating read-only AI tool calling and **three specialized agents** over fictional e-commerce data. Phase 4 adds reproducible offline scripted evaluations; Phase 5 adds an explicitly opt-in live-model evaluation.
 
 ## Quickstart in GitHub Codespaces
 
@@ -44,6 +44,35 @@ The report shows pass/fail by case and category, pass rate, and in-process avera
 **What this evaluates:** local orchestration, tool validation, fixed output contracts, and error handling with stubbed model turns and an in-memory repository.
 
 **What this does not evaluate:** live LLM reasoning quality, production security, real customer data accuracy, API token usage/cost, or real OpenAI request latency. Passing scripted cases does not establish a live-model accuracy percentage. Live evaluation should be a separate opt-in step with a cost budget.
+
+## Phase 5: Opt-in live-model evaluation
+
+The Phase 4 `npm run eval` suite still runs offline for free. Phase 5 adds **three fixed live questions** against fictional orders/inventory. It records routing, tool usage, factual answer checks, per-scenario wall-clock latency, successful-response API token usage, and optional estimated token cost.
+
+**No live API requests happen during `npm test`, `npm run eval`, or `npm run eval:json`.** The live command requires the explicit `--confirm-live` flag:
+
+```bash
+# Use your Codespaces OPENAI_API_KEY secret. Do not print or paste its value.
+npm run eval:live -- --confirm-live
+```
+
+By default the live runner permits at most **9 attempted HTTP requests** across three scenarios. To reduce exposure, set a lower limit (some cases might stop unfinished):
+
+```bash
+LIVE_EVAL_MAX_REQUESTS=6 npm run eval:live -- --confirm-live
+```
+
+This cap is per run, counts failed HTTP attempts, and cannot exceed 9. **It is not a dollar cap**; repeated runs can still incur charges. The tool does not automatically contact any payment or billing API. Your existing OpenAI billing controls remain separate.
+
+Optional, only if you've independently confirmed current standard token rates for **your selected model**, supply USD per **one million** input/output tokens:
+
+```bash
+LIVE_EVAL_INPUT_USD_PER_1M=0.40 LIVE_EVAL_OUTPUT_USD_PER_1M=1.60 npm run eval:live -- --confirm-live
+```
+
+The above rate numbers are placeholders for the syntax, **not verified current model prices**. If either rate is omitted, `estimatedCostUsd` is `null`. Estimates ignore any discounts, cached-input rates, taxes, or additional billable features; they are not invoices. See the [official pricing page](https://developers.openai.com/api/docs/pricing).
+
+The resulting JSON shows `requestsMade`, `inputTokens`, `outputTokens`, `tokenUsageComplete`, optional `estimatedCostUsd`, and results for each fictional agent question. If token usage is missing from a response, cost estimation is disabled. The evaluator does not log API keys, response bodies, or full prompts. Live outputs can vary, and simple keyword checks are **not a comprehensive quality or safety benchmark**.
 
 ## Multi-agent mutation
 
