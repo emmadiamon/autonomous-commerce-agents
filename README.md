@@ -1,173 +1,113 @@
-# Autonomous Commerce Agents
+# CommerceOS
+### Human-supervised AI agents for e-commerce operations
 
-A TypeScript/Node.js/GraphQL/PostgreSQL portfolio prototype demonstrating read-only AI tool calling and **three specialized agents** over fictional e-commerce data. Phase 4 adds reproducible offline scripted evaluations; Phase 5 adds an explicitly opt-in live-model evaluation.
+CommerceOS is a **portfolio prototype** of an AI-assisted operations workspace. Three specialized agents answer questions about fictional orders, inventory and fulfillment. A deterministic controller restricts each agent to approved read-only tools; a separate human approval workflow records replenishment decisions in PostgreSQL.
 
-## Quickstart in GitHub Codespaces
+Built with **TypeScript · Node.js · GraphQL Yoga · PostgreSQL · OpenAI Responses API · HTML/CSS/JavaScript**.
 
-Open `feat/phase7-auth-audit`, then:
+> **Demo scope:** fictional data only. No real customers, shipments, refunds, purchases or external supplier integrations. Keep the Codespaces port private.
+
+## What you can demonstrate
+
+| Capability | How it works |
+| --- | --- |
+| Operations dashboard | Responsive overview, inventory, order status, approvals, and agent workspace |
+| Three specialized agents | Customer Support, Fulfillment, and Inventory |
+| Constrained tool execution | Per-role read-only tool allowlists, validated arguments, bounded calls and turns |
+| Human approval | Low-stock proposal → pending review → approve/reject; no purchase order is sent |
+| Access controls | Single-demo-admin password, server-side session, CSRF token, protected GraphQL |
+| Accountability | PostgreSQL approval audit trail and privacy-conscious agent-run metadata |
+| Offline evaluation | 14 scripted routing/tool/safety scenarios without API calls |
+| Live evaluation | Three opt-in fictional-model scenarios with token and latency reporting |
+
+## System architecture
+
+```mermaid
+flowchart TD
+    B["CommerceOS browser dashboard"] --> S["Node.js HTTP server"]
+    S --> A["Session + CSRF gate"]
+    A --> G["GraphQL Yoga API"]
+    G --> R["Deterministic router"]
+    R --> C["Support agent"]
+    R --> F["Fulfillment agent"]
+    R --> I["Inventory agent"]
+    C --> T["Read-only commerce tools"]
+    F --> T
+    I --> T
+    T --> P[("PostgreSQL fictional data")]
+    G --> H["Human approval service"]
+    H --> P
+    G --> L["Audit event store"]
+    L --> P
+```
+
+The model can **request** a tool, but Node.js checks the tool name and arguments before reading data. Each role sees only its approved tool. The approval system uses a deterministic stock rule and is *not* an AI purchasing agent.
+
+Read the detailed [architecture and design tradeoffs](docs/ARCHITECTURE.md).
+
+## Run in GitHub Codespaces
+
+Open the branch being reviewed (currently `feat/phase8-portfolio-release`) in GitHub Codespaces, then:
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env   # only if you don't already have .env
 docker compose up -d db
 npm test
 npm run typecheck
 npm run build
-npm run eval
-```
-
-If you already have a local `.env`, **do not overwrite it**. The unit tests and offline evaluations do not require the database or an OpenAI API key. PostgreSQL is needed for the running GraphQL server. To start the dashboard and GraphQL API:
-
-```bash
 npm run dev
 ```
 
-Keep Codespaces port 4000 **Private**. Sign in through the forwarded port URL at `/dashboard`; `/graphql` is now session-protected.
+**Required:** Set `DASHBOARD_ADMIN_PASSWORD` as a **Codespaces repository secret** (unique, at least 12 characters) and restart the Codespace before `npm run dev`. Keep secrets out of Git and chat. An `OPENAI_API_KEY` Codespaces secret is optional and is only needed for billable live AI runs. For detailed setup and troubleshooting, see [the demo guide](docs/DEMO.md).
 
-Without `OPENAI_API_KEY`, the deterministic tests and evaluations work, but live agent mutations will be disabled. To test the live model, add `OPENAI_API_KEY` in your Codespaces repository secrets and restart the Codespace. Live API requests can incur costs.
+In Codespaces **Ports**, open port `4000` (visibility **Private**) and visit `/dashboard` on its forwarded URL. Sign in with your demo-admin password. The GraphQL endpoint is `/graphql` and requires an authenticated session plus an `x-csrf-token` header on POST requests.
 
-## Phase 4: Offline scripted evaluations
+## Demo flow in 90 seconds
 
-```bash
-npm run eval
-npm run eval:json
-```
+1. **Overview:** Show order, processing-order, low-stock and pending-approval cards.
+2. **Inventory:** Cotton T-shirt (`SHIRT-002`) is seeded with 8 units; click **Create proposal**. The illustrative target of 30 yields a recommendation of 22.
+3. **Approvals:** Review and approve/reject the proposal. Refresh to show PostgreSQL persistence. Inventory remains unchanged.
+4. **Activity log:** Show the `demo-admin` approval event and timestamp.
+5. **AI Workspace (optional/billable):** Ask Support “What is the status of order 1042?” The fictional order is shipped. Show the single read-only tool call and answer.
+6. **Sign out:** Show that the protected dashboard requires login.
 
-The evaluation harness executes 14 deterministic cases across three categories:
+A rehearsal checklist and interview Q&A are in [docs/DEMO.md](docs/DEMO.md).
 
-- **Routing (4):** questions about inventory, order-processing backlog, shipping, and general support route to their expected specialists.
-- **Tool results (5):** valid and missing order lookup, low-stock and no-low-stock inventory, and processing orders return expected structured results.
-- **Safety (5):** disallowed refund tool, cross-role tool, invalid inventory threshold, invalid order ID, and overlong question are rejected.
+## Verification evidence
 
-The report shows pass/fail by case and category, pass rate, and in-process average and p95 latency. `npm run eval:json` produces machine-readable output. Any failed scenario exits with a nonzero status code.
+| Check | Recorded result | Interpretation |
+| --- | --- | --- |
+| Offline scripted evaluations | **14/14 passed**, Oct 27, 2026 | Deterministic routing, tool outputs and safety checks—not real LLM reasoning |
+| Live OpenAI evaluation (`gpt-4.1-mini`) | **3/3 cases passed**, Oct 27, 2026 | Three fixed, fictional fact checks; does not imply broad production accuracy |
+| Live model requests | **6 requests**, 881 input tokens, 148 output tokens | Real token usage, not a cost estimate |
+| Live latency | **2.07s average**, 2.66s p95 | End-to-end latency over those three scenarios |
+| Phase 6 automated suite | **30/30 tests passed** | User-verified in Codespaces |
+| Phase 7 tests, typecheck, build | **Reported passing by project owner** | Exact final test count not independently captured here |
 
-**What this evaluates:** local orchestration, tool validation, fixed output contracts, and error handling with stubbed model turns and an in-memory repository.
+Run `npm run eval` to reproduce the **offline** scripted suite. The command does not call OpenAI. For a billable live evaluation, explicitly use `npm run eval:live -- --confirm-live`. That runner limits attempted requests to 9 per run; it does **not** impose a hard dollar limit. Optional token-price estimates require confirmed current rates.
 
-**What this does not evaluate:** live LLM reasoning quality, production security, real customer data accuracy, API token usage/cost, or real OpenAI request latency. Passing scripted cases does not establish a live-model accuracy percentage. Live evaluation should be a separate opt-in step with a cost budget.
+## Engineering boundaries
 
-## Phase 5: Opt-in live-model evaluation
+- **No real-world actions:** The AI tools can only read order/inventory metadata. Human approval records a decision; it never purchases stock.
+- **Defense in depth:** The model receives a limited tool schema, while the backend independently checks tool allowlists, input types and bounds.
+- **Privacy:** Agent logs record role, outcome, tool count and latency, not prompts, response bodies or secrets.
+- **Access:** Phase 7 uses one demo-admin account, not multi-user authorization. Login throttling and session storage are in process.
+- **Limitations:** No real integrations, tenant isolation, MFA, password reset, production monitoring or distributed rate limits. A `PROCESSING` order is not automatically considered delayed.
 
-The Phase 4 `npm run eval` suite still runs offline for free. Phase 5 adds **three fixed live questions** against fictional orders/inventory. It records routing, tool usage, factual answer checks, per-scenario wall-clock latency, successful-response API token usage, and optional estimated token cost.
+This repository is an **engineering demonstration**, not a deployed e-commerce service. Details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**No live API requests happen during `npm test`, `npm run eval`, or `npm run eval:json`.** The live command requires the explicit `--confirm-live` flag:
+## Repository guide
 
-```bash
-# Use your Codespaces OPENAI_API_KEY secret. Do not print or paste its value.
-npm run eval:live -- --confirm-live
-```
+- `src/agent/` — specialized agents, router and OpenAI Responses API adapter
+- `src/evaluation/` — offline and opt-in live evaluation engines
+- `src/approvals.ts`, `src/approval-db.ts` — human approval lifecycle and persistence
+- `src/session-auth.ts`, `src/secure-server.ts` — session and HTTP access controls
+- `src/schema.ts` — GraphQL schema and resolvers
+- `dashboard/` — framework-free operations UI
+- `tests/` — deterministic unit and API tests
+- `docs/` — architecture, demo and portfolio guidance
 
-By default the live runner permits at most **9 attempted HTTP requests** across three scenarios. To reduce exposure, set a lower limit (some cases might stop unfinished):
+## License and attribution
 
-```bash
-LIVE_EVAL_MAX_REQUESTS=6 npm run eval:live -- --confirm-live
-```
-
-This cap is per run, counts failed HTTP attempts, and cannot exceed 9. **It is not a dollar cap**; repeated runs can still incur charges. The tool does not automatically contact any payment or billing API. Your existing OpenAI billing controls remain separate.
-
-Optional, only if you've independently confirmed current standard token rates for **your selected model**, supply USD per **one million** input/output tokens:
-
-```bash
-LIVE_EVAL_INPUT_USD_PER_1M=0.40 LIVE_EVAL_OUTPUT_USD_PER_1M=1.60 npm run eval:live -- --confirm-live
-```
-
-The above rate numbers are placeholders for the syntax, **not verified current model prices**. If either rate is omitted, `estimatedCostUsd` is `null`. Estimates ignore any discounts, cached-input rates, taxes, or additional billable features; they are not invoices. See the [official pricing page](https://developers.openai.com/api/docs/pricing).
-
-The resulting JSON shows `requestsMade`, `inputTokens`, `outputTokens`, `tokenUsageComplete`, optional `estimatedCostUsd`, and results for each fictional agent question. If token usage is missing from a response, cost estimation is disabled. The evaluator does not log API keys, response bodies, or full prompts. Live outputs can vary, and simple keyword checks are **not a comprehensive quality or safety benchmark**.
-
-## Phase 7: authentication and audit history
-
-**Required setup before `npm run dev`:** In GitHub → repository → Settings → Secrets and variables → Codespaces, create a secret named **`DASHBOARD_ADMIN_PASSWORD`** with a unique password of at least 12 characters. Grant this repository access and **restart the Codespace** so its environment receives the secret. Do not paste the password into chat, the terminal, or Git. The app intentionally refuses to start without it.
-
-1. Run `npm test`, `npm run typecheck`, and `npm run build`.
-2. Run `docker compose up -d db`, then `npm run dev`.
-3. In Codespaces Ports, keep port **4000 Private** and open the forwarded `/dashboard` URL. You will be redirected to a branded sign-in page.
-4. Sign in with the password you configured. The site uses an 8-hour server-side session and HttpOnly, SameSite=Strict cookie, plus per-session CSRF tokens for GraphQL writes.
-5. Create and approve a *new fictional* replenishment proposal, then open **Activity log**. The approval decision should be recorded with actor `demo-admin` and timestamp.
-6. The **AI Workspace** can record the role, number of tool calls, success/failure and duration for agent runs—but only if you explicitly invoke a potentially billable OpenAI call. Prompts, responses and API keys are not stored in the audit table.
-7. Click **Sign out** and verify you cannot access the dashboard or GraphQL without signing in again.
-
-The PostgreSQL `commerce_audit_events` table is initialized automatically for existing volumes. Approval status change and its audit entry share one transaction. Duplicate approval/rejection is still rejected.
-
-**Limitations:** This implements **one demo-admin identity**, not real user accounts, RBAC, MFA, password reset, or persistent multi-instance sessions. The audit actor identifies the demo account, not a verified individual. Login throttling and sessions are held in one Node process and reset on restart; this is not production authentication. Keep the Codespace private and use fictional data only.
-
-## Phase 6: CommerceOS dashboard and human approvals
-
-The Node server now serves a responsive, professional operations dashboard at **`http://localhost:4000/dashboard`**, alongside GraphQL at `/graphql`. Use Codespaces **Ports → 4000 → Open in Browser** (port visibility must stay **Private**). You do **not** need to deploy a separate website or install a front-end build system.
-
-The dashboard includes:
-
-- Overview KPI cards for fictional orders, processing status, low stock and pending proposals.
-- Inventory table with a **Create proposal** action available for products with 10 or fewer units.
-- Human approval queue with Pending, Approved and Rejected filters.
-- Optional AI Workspace. The **Run AI agent** button explicitly incurs live API usage; opening the site does not.
-- Responsive layout for laptop and mobile.
-
-**How to test the approval flow:**
-
-1. Open the dashboard → Inventory.
-2. Click **Create proposal** for Cotton T-shirt (8 in stock). The deterministic demo policy recommends 22 units to reach 30.
-3. Open Approvals and click Approve or Reject.
-4. Refresh: the decision is persisted in PostgreSQL. Neither button changes inventory or sends orders to suppliers.
-
-The PostgreSQL approvals table and unique pending-SKU index are created automatically at server startup, including for existing Docker volumes. No database reset is necessary. Review transitions are atomic and one-way: a proposal cannot be approved and rejected twice. The same SKU can receive a fresh proposal after a previous one has been reviewed.
-
-GraphQL API additions:
-
-```graphql
-query { approvalProposals { id sku status recommendedQuantity } }
-mutation { recommendReplenishment(sku: "SHIRT-002") { id status recommendedQuantity } }
-mutation { reviewApproval(id: "1", decision: APPROVED) { id status reviewedAt } }
-```
-
-**Security boundary:** Phase 6 originally had no authentication; Phase 7 now adds a single demo-admin password, session and CSRF protections. This remains a **private local/Codespaces portfolio prototype** without individual user accounts, role-based permissions, tenant isolation or verified human identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
-
-## Multi-agent mutation
-
-```graphql
-mutation {
-  askCommerceAgent(question: "Which products have low stock?") {
-    route
-    answer
-    toolCalls
-    events { type name detail }
-  }
-}
-```
-
-Try these separately:
-
-- `"Which products have low stock?"` → inventory agent with `get_low_stock`.
-- `"Show processing orders backlog"` → fulfillment agent with `get_processing_orders`.
-- `"Where is order 1042?"` → customer support agent with `get_order_status`.
-
-You can explicitly choose a role:
-
-```graphql
-mutation {
-  askCommerceAgent(question: "Summarize the backlog", route: FULFILLMENT) {
-    route answer toolCalls
-  }
-}
-```
-
-Previous `askOrderAgent` remains available for compatibility.
-
-## Architecture
-
-1. A deterministic keyword router selects SUPPORT, FULFILLMENT or INVENTORY. The user can override via GraphQL enum.
-2. Each role receives only one read-only model tool.
-3. The backend validates tool names and arguments, limits to 2 tool calls and 4 turns, rejects duplicate call IDs, and returns safe audit-event summaries.
-4. PostgreSQL provides fictional order and inventory data when running the server.
-5. Unit tests and Phase 4 evaluations use stubbed model responses, without an API key or live model charges.
-
-Order support reads one order status; fulfillment lists **PROCESSING** orders; inventory finds products below an integer stock threshold (1-100).
-
-**Important:** PROCESSING status is not proof an order is delayed. Real delay detection would need shipped/due timestamps and business rules.
-
-## Security and limitations
-
-This is **not production-ready**: Phase 7 adds a single demo password and metadata-only audit history, but still lacks per-user authorization, MFA, distributed rate limits, verified audit identities, external messaging, and real purchase ordering. Keep your Codespaces port private. Do not use live customer information. All agents lack write tools. Do not commit API keys or `.env`.
-
-## Suggested truthful portfolio description
-
-After verifying tests and a live demo: *Built a prototype multi-agent e-commerce operations system with deterministic task routing, specialized LLM function calls, GraphQL/PostgreSQL integration, safety limits, automated tests, and a 14-scenario offline scripted evaluation harness.* Do not claim production deployment, real-model evaluation scores, or actual customer outcomes.
+Created as a personal educational portfolio project. Do not use as-is for production data or real order management.
