@@ -119,7 +119,7 @@ mutation { recommendReplenishment(sku: "SHIRT-002") { id status recommendedQuant
 mutation { reviewApproval(id: "1", decision: APPROVED) { id status reviewedAt } }
 ```
 
-**Security boundary:** This phase is a **private local/Codespaces portfolio prototype**. It does not have authentication, authorization, CSRF protections, tenant isolation or audit identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
+**Security boundary:** Phase 6 originally had no authentication; Phase 7 now adds a single demo-admin password, session and CSRF protections. This remains a **private local/Codespaces portfolio prototype** without individual user accounts, role-based permissions, tenant isolation or verified human identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
 
 ## Multi-agent mutation
 
