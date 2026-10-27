@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#101b29"/>
+  <meta name="description" content="CommerceOS — autonomous commerce operations with human approval."/>
+  <title>CommerceOS · Operations dashboard</title>
+  <link rel="stylesheet" href="/dashboard.css"/>
+  <script src="/dashboard.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">C<span class="brand-dot"></span></span><span>commerce<span class="brand-light">os</span><small>AGENT OPERATIONS</small></span></div>
+      <div class="side-section">WORKSPACE</div>
+      <nav aria-label="Main navigation">
+        <a class="nav-link active" href="#overview" data-nav="overview"><span class="nav-icon">◫</span> Overview</a>
+        <a class="nav-link" href="#inventory" data-nav="inventory"><span class="nav-icon">▦</span> Inventory</a>
+        <a class="nav-link" href="#approvals" data-nav="approvals"><span class="nav-icon">✓</span> Approvals <span id="navPending" class="nav-count">0</span></a>
+        <a class="nav-link" href="#agents" data-nav="agents"><span class="nav-icon">✳</span> AI Workspace</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="private-indicator"><span class="online-dot"></span> Prototype environment</div><p>Fictional commerce data. No external orders are placed.</p></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="crumb">Workspace <span>/</span> <strong id="pageCrumb">Overview</strong></div>
+        <div class="top-actions"><span class="mode-chip"><span class="online-dot"></span> DEMO MODE</span><div class="avatar" aria-label="Demo workspace">EM</div></div>
+      </header>
+      <main class="content">
+        <div class="page-heading"><div><div class="eyebrow">OPERATIONS INTELLIGENCE</div><h1 id="pageTitle">Overview</h1><p id="pageDescription">Your commerce operations, at a glance.</p></div><button class="refresh-button" id="refreshButton" type="button">↻ <span>Refresh data</span></button></div>
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+        <section id="overview" class="screen active" aria-label="Overview">
+          <div class="hero">
+            <div class="hero-copy"><div class="hero-kicker"><span class="sparkle">✳</span> INTELLIGENT OPERATIONS</div><h2>Better decisions.<br/><em>Human control.</em></h2><p>Your AI assistants surface operational insights. You stay in charge of every decision.</p><button id="heroReview" type="button" class="hero-button">Review approvals <span>↗</span></button></div>
+            <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="center-symbol">✳</div><div class="satellite s1">↗</div><div class="satellite s2">▦</div><div class="satellite s3">✓</div></div>
+          </div>
+          <div class="kpi-grid">
+            <article class="kpi"><div class="kpi-label">Total orders <span>↗</span></div><strong id="kpiOrders">—</strong><div class="kpi-foot">Fictional orders</div></article>
+            <article class="kpi"><div class="kpi-label">Processing orders <span>◷</span></div><strong id="kpiProcessing">—</strong><div class="kpi-foot">Status only, not confirmed late</div></article>
+            <article class="kpi"><div class="kpi-label">Low stock items <span>▦</span></div><strong id="kpiLowStock">—</strong><div class="kpi-foot">10 or fewer units available</div></article>
+            <article class="kpi"><div class="kpi-label">Awaiting approval <span>✓</span></div><strong id="kpiApprovals">—</strong><div class="kpi-foot">Human decision required</div></article>
+          </div>
+          <div class="section-grid">
+            <section class="card"><div class="card-head"><div><h3>Recent orders</h3><p>Current fulfillment status</p></div><span class="soft-chip">LIVE DATA</span></div><div class="table-wrap"><table><thead><tr><th>ORDER</th><th>AMOUNT</th><th>STATUS</th></tr></thead><tbody id="recentOrders"><tr><td colspan="3">Loading orders…</td></tr></tbody></table></div></section>
+            <section class="card"><div class="card-head"><div><h3>Agent team</h3><p>Three specialized assistants</p></div></div><div class="agent-list"><div class="agent-item"><span class="agent-icon mint">◎</span><div><strong>Customer Support</strong><small>Order status inquiries</small></div><span class="agent-role">READ ONLY</span></div><div class="agent-item"><span class="agent-icon blue">▦</span><div><strong>Inventory</strong><small>Stock monitoring</small></div><span class="agent-role">READ ONLY</span></div><div class="agent-item"><span class="agent-icon apricot">◇</span><div><strong>Fulfillment</strong><small>Processing order insights</small></div><span class="agent-role">READ ONLY</span></div></div></section>
+          </div>
+        </section>
+        <section id="inventory" class="screen" aria-label="Inventory"><div class="card full-card"><div class="card-head"><div><h3>Inventory management</h3><p>Monitor stock levels and create reviewable replenishment proposals.</p></div><span class="soft-chip">READ-ONLY STOCK</span></div><div class="table-wrap"><table><thead><tr><th>PRODUCT</th><th>SKU</th><th>IN STOCK</th><th>HEALTH</th><th class="align-right">ACTION</th></tr></thead><tbody id="inventoryRows"></tbody></table></div><div class="table-footer">Recommendations target 30 units as an illustrative demo rule; no suppliers or orders are contacted.</div></div></section>
+        <section id="approvals" class="screen" aria-label="Approvals"><div class="approvals-intro"><div class="review-icon">✓</div><div><h2>Human approval queue</h2><p>AI-assisted recommendations stay pending until you explicitly approve or reject them. Approval records a decision only.</p></div></div><div class="filter-row"><button type="button" class="filter active" data-filter="ALL">All</button><button type="button" class="filter" data-filter="PENDING">Pending</button><button type="button" class="filter" data-filter="APPROVED">Approved</button><button type="button" class="filter" data-filter="REJECTED">Rejected</button></div><div id="approvalCards" class="approval-list"></div></section>
+        <section id="agents" class="screen" aria-label="Agent workspace"><div class="agent-grid"><div class="card agent-console"><div class="card-head"><div><h3>AI agent console</h3><p>Ask a specialized assistant about fictional commerce data.</p></div><span class="soft-chip">OPENAI API</span></div><form id="agentForm"><label for="agentRole">Agent</label><select id="agentRole"><option value="SUPPORT">Customer Support</option><option value="INVENTORY">Inventory</option><option value="FULFILLMENT">Fulfillment</option></select><label for="agentQuestion">Your question</label><textarea id="agentQuestion" rows="4" maxlength="1000" placeholder="Example: What is the status of order 1042?" required></textarea><p class="cost-warning">⚠ Running this agent sends a real, billable OpenAI API request. Nothing runs automatically.</p><button type="submit" id="runAgent" class="primary-button">Run AI agent ↗</button></form></div><div class="card response-card"><div class="card-head"><div><h3>Agent response</h3><p>Traceable tool activity</p></div></div><div id="agentResponse" class="agent-response"><span class="response-symbol">✳</span><h4>Ready when you are</h4><p>Choose an agent and run a question to see its answer and tool events.</p></div></div></div></section>
+        <footer>CommerceOS / Autonomous Commerce Agents <span>Portfolio prototype · Not production software</span></footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
