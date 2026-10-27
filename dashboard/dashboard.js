@@ -1,19 +1,22 @@
 'use strict';
 
 const $ = id => document.getElementById(id);
-const state = { orders: [], inventory: [], approvals: [], filter: 'ALL', busy: false };
+const state = { orders: [], inventory: [], approvals: [], audits: [], filter: 'ALL', busy: false };
+let csrfToken = '';
 const descriptions = {
   overview: ['Overview', 'Your commerce operations, at a glance.'],
   inventory: ['Inventory', 'Products, stock levels and replenishment recommendations.'],
   approvals: ['Approvals', 'A human review step for every proposed action.'],
   agents: ['AI Workspace', 'Ask specialized agents for operational insights.'],
+  activity: ['Activity log', 'A traceable history of human reviews and AI agent runs.'],
 };
 
 async function graphql(query, variables = {}) {
   const response = await fetch('/graphql', {
-    method: 'POST', headers: { 'content-type': 'application/json' },
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken },
     body: JSON.stringify({ query, variables }),
   });
+  if (response.status === 401) { location.assign('/login'); throw new Error('Session expired'); }
   if (!response.ok) throw new Error('GraphQL request failed (HTTP ' + response.status + ')');
   const body = await response.json();
   if (body.errors?.length) throw new Error(body.errors[0].message || 'Request failed');
@@ -124,18 +127,37 @@ function paintApprovals() {
     el.append(card);
   }
 }
+function paintActivity() {
+  const el = $('auditRows'); clear(el);
+  for (const event of state.audits) {
+    const tr = document.createElement('tr');
+    cell(tr, new Date(event.createdAt).toLocaleString());
+    cell(tr, event.category === 'APPROVAL' ? 'Proposal ' + event.action.toLowerCase() : 'AI agent run');
+    cell(tr, event.actor);
+    cell(tr, event.subject);
+    const td = document.createElement('td');
+    td.append(badge(event.outcome, event.outcome === 'SUCCESS' ? 'APPROVED' : 'REJECTED'));
+    tr.append(td);
+    el.append(tr);
+  }
+  if (!state.audits.length) {
+    const tr = document.createElement('tr'); const td = cell(tr, 'No activity recorded yet');
+    td.colSpan = 5; el.append(tr);
+  }
+}
 async function refresh() {
   try {
-    const data = await graphql('query Dashboard { orders { id status totalCents } inventory { sku productName stockQuantity } approvalProposals { id sku productName currentStock recommendedQuantity reason status createdAt reviewedAt } }');
+    const data = await graphql('query Dashboard { orders { id status totalCents } inventory { sku productName stockQuantity } approvalProposals { id sku productName currentStock recommendedQuantity reason status createdAt reviewedAt } auditEvents { id category action actor subject outcome toolCalls durationMs createdAt } }');
     state.orders = data.orders ?? [];
     state.inventory = data.inventory ?? [];
     state.approvals = data.approvalProposals ?? [];
+    state.audits = data.auditEvents ?? [];
     $('kpiOrders').textContent = state.orders.length;
     $('kpiProcessing').textContent = state.orders.filter(o => o.status === 'PROCESSING').length;
     $('kpiLowStock').textContent = state.inventory.filter(i => i.stockQuantity <= 10).length;
     const pending = state.approvals.filter(a => a.status === 'PENDING').length;
     $('kpiApprovals').textContent = pending; $('navPending').textContent = pending;
-    paintOrders(); paintInventory(); paintApprovals();
+    paintOrders(); paintInventory(); paintApprovals(); paintActivity();
   } catch (error) { showNotice('Could not load dashboard data. ' + error.message, true); }
 }
 async function runAgent(event) {
@@ -174,4 +196,17 @@ $('refreshButton').addEventListener('click', () => void refresh());
 $('agentForm').addEventListener('submit', event => { void runAgent(event); });
 window.addEventListener('hashchange', () => navigate(location.hash.slice(1)));
 navigate(location.hash.slice(1) || 'overview');
-void refresh();
+async function bootstrap() {
+  try {
+    const response = await fetch('/auth/session', { cache: 'no-store' });
+    if (!response.ok) { location.assign('/login'); return; }
+    const session = await response.json();
+    csrfToken = session.csrfToken;
+    await refresh();
+  } catch { showNotice('Could not verify your session. Please reload the page.', true); }
+}
+$('logoutButton').addEventListener('click', async () => {
+  try { await fetch('/auth/logout', { method: 'POST', headers: { 'x-csrf-token': csrfToken } }); }
+  finally { location.assign('/login'); }
+});
+void bootstrap();

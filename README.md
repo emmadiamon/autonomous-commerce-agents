@@ -4,7 +4,7 @@ A TypeScript/Node.js/GraphQL/PostgreSQL portfolio prototype demonstrating read-o
 
 ## Quickstart in GitHub Codespaces
 
-Open `feat/phase6-approvals-dashboard`, then:
+Open `feat/phase7-auth-audit`, then:
 
 ```bash
 npm install
@@ -22,7 +22,7 @@ If you already have a local `.env`, **do not overwrite it**. The unit tests and 
 npm run dev
 ```
 
-Keep Codespaces port 4000 **Private**. Open the forwarded port URL at `/dashboard` for the operations console, or `/graphql` for the API.
+Keep Codespaces port 4000 **Private**. Sign in through the forwarded port URL at `/dashboard`; `/graphql` is now session-protected.
 
 Without `OPENAI_API_KEY`, the deterministic tests and evaluations work, but live agent mutations will be disabled. To test the live model, add `OPENAI_API_KEY` in your Codespaces repository secrets and restart the Codespace. Live API requests can incur costs.
 
@@ -74,6 +74,22 @@ The above rate numbers are placeholders for the syntax, **not verified current m
 
 The resulting JSON shows `requestsMade`, `inputTokens`, `outputTokens`, `tokenUsageComplete`, optional `estimatedCostUsd`, and results for each fictional agent question. If token usage is missing from a response, cost estimation is disabled. The evaluator does not log API keys, response bodies, or full prompts. Live outputs can vary, and simple keyword checks are **not a comprehensive quality or safety benchmark**.
 
+## Phase 7: authentication and audit history
+
+**Required setup before `npm run dev`:** In GitHub → repository → Settings → Secrets and variables → Codespaces, create a secret named **`DASHBOARD_ADMIN_PASSWORD`** with a unique password of at least 12 characters. Grant this repository access and **restart the Codespace** so its environment receives the secret. Do not paste the password into chat, the terminal, or Git. The app intentionally refuses to start without it.
+
+1. Run `npm test`, `npm run typecheck`, and `npm run build`.
+2. Run `docker compose up -d db`, then `npm run dev`.
+3. In Codespaces Ports, keep port **4000 Private** and open the forwarded `/dashboard` URL. You will be redirected to a branded sign-in page.
+4. Sign in with the password you configured. The site uses an 8-hour server-side session and HttpOnly, SameSite=Strict cookie, plus per-session CSRF tokens for GraphQL writes.
+5. Create and approve a *new fictional* replenishment proposal, then open **Activity log**. The approval decision should be recorded with actor `demo-admin` and timestamp.
+6. The **AI Workspace** can record the role, number of tool calls, success/failure and duration for agent runs—but only if you explicitly invoke a potentially billable OpenAI call. Prompts, responses and API keys are not stored in the audit table.
+7. Click **Sign out** and verify you cannot access the dashboard or GraphQL without signing in again.
+
+The PostgreSQL `commerce_audit_events` table is initialized automatically for existing volumes. Approval status change and its audit entry share one transaction. Duplicate approval/rejection is still rejected.
+
+**Limitations:** This implements **one demo-admin identity**, not real user accounts, RBAC, MFA, password reset, or persistent multi-instance sessions. The audit actor identifies the demo account, not a verified individual. Login throttling and sessions are held in one Node process and reset on restart; this is not production authentication. Keep the Codespace private and use fictional data only.
+
 ## Phase 6: CommerceOS dashboard and human approvals
 
 The Node server now serves a responsive, professional operations dashboard at **`http://localhost:4000/dashboard`**, alongside GraphQL at `/graphql`. Use Codespaces **Ports → 4000 → Open in Browser** (port visibility must stay **Private**). You do **not** need to deploy a separate website or install a front-end build system.
@@ -103,7 +119,7 @@ mutation { recommendReplenishment(sku: "SHIRT-002") { id status recommendedQuant
 mutation { reviewApproval(id: "1", decision: APPROVED) { id status reviewedAt } }
 ```
 
-**Security boundary:** This phase is a **private local/Codespaces portfolio prototype**. It does not have authentication, authorization, CSRF protections, tenant isolation or audit identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
+**Security boundary:** Phase 6 originally had no authentication; Phase 7 now adds a single demo-admin password, session and CSRF protections. This remains a **private local/Codespaces portfolio prototype** without individual user accounts, role-based permissions, tenant isolation or verified human identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
 
 ## Multi-agent mutation
 
@@ -150,7 +166,7 @@ Order support reads one order status; fulfillment lists **PROCESSING** orders; i
 
 ## Security and limitations
 
-This is **not production-ready**: no authentication, tenant-level authorization, rate limits, audit identities, external messaging, or real purchase ordering. Phase 6 stores demo approval decisions in PostgreSQL, but does not implement a production-grade audit log. Keep your Codespaces port private. Do not use live customer information. All agents lack write tools. Do not commit API keys or `.env`.
+This is **not production-ready**: Phase 7 adds a single demo password and metadata-only audit history, but still lacks per-user authorization, MFA, distributed rate limits, verified audit identities, external messaging, and real purchase ordering. Keep your Codespaces port private. Do not use live customer information. All agents lack write tools. Do not commit API keys or `.env`.
 
 ## Suggested truthful portfolio description
 
