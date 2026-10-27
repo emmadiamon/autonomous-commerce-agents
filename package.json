@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval": "tsx scripts/evaluate.ts",
+    "eval:json": "tsx scripts/evaluate.ts --json"
   },
   "engines": {
     "node": ">=20"
