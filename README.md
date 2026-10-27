@@ -4,7 +4,7 @@ A TypeScript/Node.js/GraphQL/PostgreSQL portfolio prototype demonstrating read-o
 
 ## Quickstart in GitHub Codespaces
 
-Open `feat/phase4-evaluations`, then:
+Open `feat/phase6-approvals-dashboard`, then:
 
 ```bash
 npm install
@@ -16,13 +16,13 @@ npm run build
 npm run eval
 ```
 
-If you already have a local `.env`, **do not overwrite it**. The unit tests and offline evaluations do not require the database or an OpenAI API key. PostgreSQL is needed for the running GraphQL server. To start the GraphQL API:
+If you already have a local `.env`, **do not overwrite it**. The unit tests and offline evaluations do not require the database or an OpenAI API key. PostgreSQL is needed for the running GraphQL server. To start the dashboard and GraphQL API:
 
 ```bash
 npm run dev
 ```
 
-Keep Codespaces port 4000 **Private**. Open the forwarded URL's `/graphql` path.
+Keep Codespaces port 4000 **Private**. Open the forwarded port URL at `/dashboard` for the operations console, or `/graphql` for the API.
 
 Without `OPENAI_API_KEY`, the deterministic tests and evaluations work, but live agent mutations will be disabled. To test the live model, add `OPENAI_API_KEY` in your Codespaces repository secrets and restart the Codespace. Live API requests can incur costs.
 
@@ -74,6 +74,37 @@ The above rate numbers are placeholders for the syntax, **not verified current m
 
 The resulting JSON shows `requestsMade`, `inputTokens`, `outputTokens`, `tokenUsageComplete`, optional `estimatedCostUsd`, and results for each fictional agent question. If token usage is missing from a response, cost estimation is disabled. The evaluator does not log API keys, response bodies, or full prompts. Live outputs can vary, and simple keyword checks are **not a comprehensive quality or safety benchmark**.
 
+## Phase 6: CommerceOS dashboard and human approvals
+
+The Node server now serves a responsive, professional operations dashboard at **`http://localhost:4000/dashboard`**, alongside GraphQL at `/graphql`. Use Codespaces **Ports → 4000 → Open in Browser** (port visibility must stay **Private**). You do **not** need to deploy a separate website or install a front-end build system.
+
+The dashboard includes:
+
+- Overview KPI cards for fictional orders, processing status, low stock and pending proposals.
+- Inventory table with a **Create proposal** action available for products with 10 or fewer units.
+- Human approval queue with Pending, Approved and Rejected filters.
+- Optional AI Workspace. The **Run AI agent** button explicitly incurs live API usage; opening the site does not.
+- Responsive layout for laptop and mobile.
+
+**How to test the approval flow:**
+
+1. Open the dashboard → Inventory.
+2. Click **Create proposal** for Cotton T-shirt (8 in stock). The deterministic demo policy recommends 22 units to reach 30.
+3. Open Approvals and click Approve or Reject.
+4. Refresh: the decision is persisted in PostgreSQL. Neither button changes inventory or sends orders to suppliers.
+
+The PostgreSQL approvals table and unique pending-SKU index are created automatically at server startup, including for existing Docker volumes. No database reset is necessary. Review transitions are atomic and one-way: a proposal cannot be approved and rejected twice. The same SKU can receive a fresh proposal after a previous one has been reviewed.
+
+GraphQL API additions:
+
+```graphql
+query { approvalProposals { id sku status recommendedQuantity } }
+mutation { recommendReplenishment(sku: "SHIRT-002") { id status recommendedQuantity } }
+mutation { reviewApproval(id: "1", decision: APPROVED) { id status reviewedAt } }
+```
+
+**Security boundary:** This phase is a **private local/Codespaces portfolio prototype**. It does not have authentication, authorization, CSRF protections, tenant isolation or audit identities. **Do not make port 4000 public or use real business data.** Approval records a human decision in the demo only; it never places a purchase order. The inventory proposals are deterministic rules, not new autonomous LLM purchasing capabilities.
+
 ## Multi-agent mutation
 
 ```graphql
@@ -119,7 +150,7 @@ Order support reads one order status; fulfillment lists **PROCESSING** orders; i
 
 ## Security and limitations
 
-This is **not production-ready**: no authentication, tenant-level authorization, rate limits, durable audit database, external messaging, or order modifications. Keep your Codespaces port private. Do not use live customer information. All agents lack write tools. Do not commit API keys or `.env`.
+This is **not production-ready**: no authentication, tenant-level authorization, rate limits, audit identities, external messaging, or real purchase ordering. Phase 6 stores demo approval decisions in PostgreSQL, but does not implement a production-grade audit log. Keep your Codespaces port private. Do not use live customer information. All agents lack write tools. Do not commit API keys or `.env`.
 
 ## Suggested truthful portfolio description
 
