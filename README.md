@@ -47,7 +47,7 @@ Read the detailed [architecture and design tradeoffs](docs/ARCHITECTURE.md).
 
 ## Run in GitHub Codespaces
 
-Open the branch being reviewed (currently `feat/phase8-portfolio-release`) in GitHub Codespaces, then:
+Open the branch being reviewed (`feat/phase8-portfolio-release`, or `main` after integration) in GitHub Codespaces, then:
 
 ```bash
 npm install
