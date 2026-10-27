@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { TLSSocket } from 'node:tls';
 import type { createSessionAuth } from './session-auth.js';
 import { readSessionCookie, SESSION_COOKIE } from './session-auth.js';
 
@@ -35,7 +36,7 @@ async function readLoginBody(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(input) as unknown;
 }
 function secureTransport(req: IncomingMessage) {
-  return req.socket.encrypted || req.headers['x-forwarded-proto'] === 'https';
+  return req.socket instanceof TLSSocket || req.headers['x-forwarded-proto'] === 'https';
 }
 export function createSecureServer(yoga: Handler, auth: Auth) {
   return createServer((req, res) => {
