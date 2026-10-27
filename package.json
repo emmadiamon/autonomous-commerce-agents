@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "eval": "tsx scripts/evaluate.ts",
-    "eval:json": "tsx scripts/evaluate.ts --json"
+    "eval:json": "tsx scripts/evaluate.ts --json",
+    "eval:live": "tsx scripts/evaluate-live.ts"
   },
   "engines": {
     "node": ">=20"
